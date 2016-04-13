@@ -4,6 +4,22 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+type CommandQueue []*Command
+
+func (q *CommandQueue) Push(n *Command) {
+    *q = append(*q, n)
+}
+
+func (q *CommandQueue) Pop() (n *Command) {
+    n = (*q)[0]
+    *q = (*q)[1:]
+    return
+}
+
+func (q *CommandQueue) Len() int {
+    return len(*q)
+}
+
 type Command struct {
 	Type string `json:"type"`
 	Args interface{} `json:"args"`

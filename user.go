@@ -1,6 +1,8 @@
 package go_todoist
 
-type UserManager struct {
+import "encoding/json"
+
+type User struct {
 	AutoReminder      int           `json:"auto_reminder"`
 	AvatarBig         string        `json:"avatar_big"`
 	AvatarMedium      string        `json:"avatar_medium"`
@@ -39,4 +41,17 @@ type UserManager struct {
 	Timezone          string        `json:"timezone"`
 	Token             string        `json:"token"`
 	TzOffset          []interface{} `json:"tz_offset"`
+}
+
+type UserManager struct {
+	User User
+}
+
+func (um *UserManager) UnmarshalJSON(b []byte) error {
+	err := json.Unmarshal(b, &um.User)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

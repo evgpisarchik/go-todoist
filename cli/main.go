@@ -60,13 +60,15 @@ func main() {
 	}
 
 	api := go_todoist.NewTodoistAPI(token)
-	err = api.Sync()
+	api.Sync()
 
 	if err != nil {
 		log.Print(err)
 	}
 
-	log.Println(api.Projects)
-	log.Println(api.Filters)
-	log.Println(api.Notes)
+
+	log.Println(api.User)
+	//log.Println(api.User.Token)
+	//log.Println(api.SeqNoGlobal)
+
 }

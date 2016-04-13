@@ -7,7 +7,13 @@ import (
 	"encoding/json"
 )
 
+const (
+	MAX_COMMANDS_PER_REQ = 100
+	MAX_NUMBER_OF_REQ_PER_SEC = 50
+)
+
 type TodoistAPI struct  {
+
 	ApiEndpoint string
 	Token string
 	Commands []Command
@@ -15,6 +21,7 @@ type TodoistAPI struct  {
 	DayOrdersTimestamp string `json:"DayOrdersTimestamp,ommitempty"`
 	UserId int `json:"UserId,ommitempty"`
 	SeqNo int `json:"seq_no"`
+	SeqNoGlobal int `json:"seq_no_global,ommitempty"`
 	WebStaticVersion int `json:"WebStaticVersion,ommitempty"`
 	LiveNotificationsLastRead int `json:"LiveNotificationsLastRead,ommitempty"`
 
@@ -38,8 +45,11 @@ func (api *TodoistAPI) getApiUrl(call string) string {
 	return api.ApiEndpoint + "/API/v6/" + call
 }
 
+//func (api *TodoistAPI) getSeqNo()
+
 func (api *TodoistAPI) post(call string, data url.Values, v interface{}) error {
 	u := api.getApiUrl(call)
+	data.Add("token", api.Token)
 
 	resp, err := http.PostForm(u, data)
 
@@ -68,17 +78,12 @@ func (api *TodoistAPI) post(call string, data url.Values, v interface{}) error {
 	return nil
 }
 
-func (api *TodoistAPI) Sync() error {
+func (api *TodoistAPI) read() error {
 	data := url.Values{}
-	//commands, err := json.Marshal(api.Commands)
 
-	//if err != nil {
-	//	return err
-	//}
-	data.Add("token", api.Token)
-	//data.Add("commands", string(commands))
-	data.Add("seq_no", "0")
-	data.Add("resource_types", "[\"all\"]")
+	data.Add("seq_no", "0") // TODO: create seq_no choice
+	data.Add("resource_types", "[\"all\"]") //TODO: add resource types choice
+	data.Add("day_orders_timestamp", api.DayOrdersTimestamp)
 
 	err := api.post("sync", data, api)
 
@@ -87,4 +92,43 @@ func (api *TodoistAPI) Sync() error {
 	}
 
 	return nil
+}
+
+func (api *TodoistAPI) write() error {
+	commands, err := json.Marshal(api.Commands)
+	if err != nil {
+		return err
+	}
+	data := url.Values{}
+	data.Add("commands", string(commands))
+
+	err = api.post("sync", data, api)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (api *TodoistAPI) Sync() error {
+	err := api.read()
+
+	return err
+}
+func (api *TodoistAPI) Register(email, fullName, password string) (*User, error) {
+	data := url.Values{}
+
+	data.Add("email", email)
+	data.Add("full_name", fullName)
+	data.Add("password", password)
+
+	user := new(User)
+	err := api.post("register", data, user)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
