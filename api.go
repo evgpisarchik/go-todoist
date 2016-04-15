@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"io"
 	"encoding/json"
+	"log"
 )
 
 const (
@@ -16,29 +17,38 @@ type TodoistAPI struct  {
 
 	ApiEndpoint string
 	Token string
-	Commands []Command
+	Commands CommandQueue
+	TempIdMapping map[string]int `json:"TempIdMapping,omitempty"`
+	SyncStatus SyncStatus `json:"SyncStatus,omitempty"`
 
-	DayOrdersTimestamp string `json:"DayOrdersTimestamp,ommitempty"`
-	UserId int `json:"UserId,ommitempty"`
+	DayOrdersTimestamp string `json:"DayOrdersTimestamp,omitempty"`
+	UserId int `json:"UserId,omitempty"`
 	SeqNo int `json:"seq_no"`
-	SeqNoGlobal int `json:"seq_no_global,ommitempty"`
-	WebStaticVersion int `json:"WebStaticVersion,ommitempty"`
-	LiveNotificationsLastRead int `json:"LiveNotificationsLastRead,ommitempty"`
+	SeqNoGlobal int `json:"seq_no_global,omitempty"`
+	WebStaticVersion int `json:"WebStaticVersion,omitempty"`
+	LiveNotificationsLastRead int `json:"LiveNotificationsLastRead,omitempty"`
 
-	User *UserManager `json:"User,ommitempty"`
-	Projects *ProjectManager `json:"Projects,ommitempty"`
-	Filters FilterManager `json:"Filters,ommitempty"`
-	Items ItemManager `json:"Items,ommitempty"`
-	Reminders ReminderManager `json:"Reminders,ommitempty"`
-	Labels LabelManager `json:"Labels,ommitempty"`
-	Notes NoteManager `json:"Notes,ommitempty"`
+	User *UserManager `json:"User,omitempty"`
+	Projects *ProjectManager `json:"Projects,omitempty"`
+	Filters FilterManager `json:"Filters,omitempty"`
+	Items ItemManager `json:"Items,omitempty"`
+	Reminders ReminderManager `json:"Reminders,omitempty"`
+	Labels LabelManager `json:"Labels,omitempty"`
+	Notes NoteManager `json:"Notes,omitempty"`
 }
 
+
+type SyncStatus map[string]interface{}
+
 func NewTodoistAPI(token string) *TodoistAPI {
-	return &TodoistAPI{
+	api := &TodoistAPI{
 		Token: token,
 		ApiEndpoint: "https://api.todoist.com",
 	}
+
+	api.Projects = &ProjectManager{Api:api}
+
+	return api
 }
 
 func (api *TodoistAPI) getApiUrl(call string) string {
@@ -50,6 +60,7 @@ func (api *TodoistAPI) getApiUrl(call string) string {
 func (api *TodoistAPI) post(call string, data url.Values, v interface{}) error {
 	u := api.getApiUrl(call)
 	data.Add("token", api.Token)
+
 
 	resp, err := http.PostForm(u, data)
 
@@ -85,6 +96,7 @@ func (api *TodoistAPI) read() error {
 	data.Add("resource_types", "[\"all\"]") //TODO: add resource types choice
 	data.Add("day_orders_timestamp", api.DayOrdersTimestamp)
 
+
 	err := api.post("sync", data, api)
 
 	if err != nil {
@@ -100,20 +112,25 @@ func (api *TodoistAPI) write() error {
 		return err
 	}
 	data := url.Values{}
-	data.Add("commands", string(commands))
+	v := string(commands)
+	log.Println(v)
+	data.Add("commands", v)
 
 	err = api.post("sync", data, api)
 
 	if err != nil {
 		return err
 	}
+	api.Commands.Clear()
 
 	return nil
 }
 
 func (api *TodoistAPI) Sync() error {
 	err := api.read()
-
+	if !api.Commands.IsEmpty() {
+		err = api.write()
+	}
 	return err
 }
 func (api *TodoistAPI) Register(email, fullName, password string) (*User, error) {

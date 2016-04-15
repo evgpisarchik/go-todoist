@@ -16,8 +16,16 @@ func (q *CommandQueue) Pop() (n *Command) {
     return
 }
 
+func (q *CommandQueue) Clear() {
+	*q = (*q)[:0]
+}
+
 func (q *CommandQueue) Len() int {
     return len(*q)
+}
+
+func (q *CommandQueue) IsEmpty() bool {
+	return len(*q) == 0
 }
 
 type Command struct {
@@ -32,6 +40,7 @@ func NewCommand(tp string, args interface{}) *Command {
 		Type: tp,
 		Args: args,
 		UUID: generateUUID(),
+		TempID: generateUUID(),
 	}
 }
 

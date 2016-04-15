@@ -60,14 +60,27 @@ func main() {
 	}
 
 	api := go_todoist.NewTodoistAPI(token)
-	api.Sync()
+	err = api.Sync()
+	if err != nil {
+		log.Print(err)
+	}
+	p := go_todoist.Project{Name:"Hello World!", ID:"12345678777"}
 
+	api.Projects.Add(&p)
+	api.Projects.Delete(api.Projects.Projects[len(api.Projects.Projects)-1])
+
+	p.Name = "Yooooooooo"
+	//api.Projects.Update(&p)
+	err = api.Sync()
+	log.Println(len(api.Projects.Projects))
 	if err != nil {
 		log.Print(err)
 	}
 
 
-	log.Println(api.User)
+	log.Println(api.Projects)
+	log.Println(api.SyncStatus)
+	log.Println(api.TempIdMapping)
 	//log.Println(api.User.Token)
 	//log.Println(api.SeqNoGlobal)
 
