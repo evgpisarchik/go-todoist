@@ -1,5 +1,6 @@
 # == IDE ==
 .idea
+*.swp
 
 # == Dev ==
 cli/todoist_api_token

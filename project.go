@@ -13,7 +13,7 @@ func (id *ID) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (id *ID) MarshalJSON() ([]byte, error)  {
+func (id *ID) MarshalJSON() ([]byte, error) {
 	// if id is tempId (string) return empty id
 	i, err := strconv.Atoi(string(*id))
 	if err != nil {
@@ -49,9 +49,9 @@ func (p Project) String() string {
 }
 
 type ProjectManager struct {
-	Api          *TodoistAPI
+	Api *TodoistAPI
 
-	Projects     []*Project
+	Projects []*Project
 }
 
 func (pm *ProjectManager) UnmarshalJSON(b []byte) error {
@@ -93,9 +93,9 @@ func (pm *ProjectManager) Unarchive(project *Project) {
 	pm.Api.Commands.Push(command)
 }
 
-func (pm *ProjectManager) Find(id string) (*Project) {
-	for i:=0; i < len(pm.Projects); i++ {
-		if pm.Projects[i].ID == ID(id){
+func (pm *ProjectManager) Find(id string) *Project {
+	for i := 0; i < len(pm.Projects); i++ {
+		if pm.Projects[i].ID == ID(id) {
 			return pm.Projects[i]
 		}
 	}
@@ -104,4 +104,10 @@ func (pm *ProjectManager) Find(id string) (*Project) {
 
 func (pm *ProjectManager) ReplaceTempId(tempId, realId string) error {
 	return nil
+}
+
+func (pm *ProjectManager) DeleteAll() {
+	for i := 0; i < len(pm.Projects); i++ {
+		pm.Delete(pm.Projects[i])
+	}
 }

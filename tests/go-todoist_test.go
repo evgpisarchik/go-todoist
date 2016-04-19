@@ -1,12 +1,15 @@
-package main
+package tests
 
 import (
 	"errors"
 	"log"
 	"os"
+	"testing"
 
 	"github.com/rusnassonov/go-todoist"
 )
+
+var api *go_todoist.TodoistAPI
 
 func readFromFile(name string) (string, error) {
 	file, err := os.Open(name)
@@ -50,38 +53,62 @@ func ReadToken(name string) (string, error) {
 
 	return "", err
 }
-
-func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+func init() {
 	token, err := ReadToken("todoist_api_token")
 
 	if err != nil {
-		log.Print(err)
-		return
+		log.Println("Todoist API token not found")
 	}
+	api = go_todoist.NewTodoistAPI(token)
+}
 
-	api := go_todoist.NewTodoistAPI(token)
-	err = api.Sync()
+func TestAddProject(t *testing.T) {
+	err := api.Sync()
+
 	if err != nil {
-		log.Print(err)
+		t.Fail()
 	}
-	p := go_todoist.Project{Name: "Hello World!", ID: "12345678777"}
 
+	p := go_todoist.Project{Name: "Hello world!"}
 	api.Projects.Add(&p)
-	api.Projects.Delete(api.Projects.Projects[len(api.Projects.Projects)-1])
 
-	p.Name = "Yooooooooo"
-	//api.Projects.Update(&p)
 	err = api.Sync()
-	log.Println(len(api.Projects.Projects))
+
 	if err != nil {
-		log.Print(err)
+		t.Fatalf("Add project error: %v", err)
 	}
 
-	log.Println(api.Projects)
-	log.Println(api.SyncStatus)
-	log.Println(api.TempIdMapping)
-	//log.Println(api.User.Token)
-	//log.Println(api.SeqNoGlobal)
+	if p.ID == "0" {
+		t.Errorf("Project ID is 0")
+	}
 
+}
+
+func TestDeleteProject(t *testing.T) {
+	err := api.Sync()
+
+	if err != nil {
+		t.Fail()
+	}
+
+	p := go_todoist.Project{Name: "Hello world!"}
+	api.Projects.Add(&p)
+
+	api.Sync()
+
+	api.Projects.Delete(&p)
+
+	err = api.Sync()
+
+	if err != nil {
+		t.Errorf("Fail delete project: %v", err)
+	}
+}
+
+func TestDeleteAll(t *testing.T) {
+	api.Sync()
+
+	api.Projects.DeleteAll()
+
+	api.Sync()
 }
